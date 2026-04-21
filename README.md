@@ -1,97 +1,130 @@
 # My Chat App 💬
-A real-time chat application where users can sign up, search for friends, and chat instantly using WebSockets.
 
-**Features:**
+A real-time MERN chat application (frontend + backend) using Socket.io and MongoDB.
+
+Features
 - User authentication with JWT
 - Real-time messaging with Socket.io
-- Search and add users
-- Online user status
-- Beautiful UI with Tailwind CSS
+- Responsive UI with Tailwind CSS
 
 ---
 
 ## Tech Stack
-- **Frontend:** React.js, Vite, Tailwind CSS, Zustand
-- **Backend:** Node.js, Express.js, Socket.io
+- **Frontend:** React, Vite, Tailwind CSS, Zustand
+- **Backend:** Node.js, Express, Socket.io
 - **Database:** MongoDB Atlas
-- **Containerization:** Docker
-- **Orchestration:** Kubernetes, Helm (optional)
-- **Infrastructure:** Terraform for AWS
+- **Containerization:** Docker (multi-stage)
+- **CI/CD:** GitHub Actions (workflows in `.github/workflows`)
 
 ---
 
-## Setup Instructions
+## Quick Start (local)
 
-### 1. Prerequisites
+Prerequisites
 - Node.js v18+
-- MongoDB Atlas account (free tier available)
 - Git
 
-### 2. Clone & Install
+Clone & install
 ```bash
-git clone https://github.com/YOUR_USERNAME/my-chat-app.git
-cd my-chat-app
+git clone https://github.com/SahilVijaySingh28/Mern-Chat-app.git
+cd Mern-Chat-app
 npm install
-cd frontend && npm install && cd ..
+npm install --prefix frontend
 ```
 
-### 3. Create .env file
-Create a `.env` file in the project root:
-```
-PORT=5000
-MONGO_DB_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/chatapp?retryWrites=true&w=majority
-JWT_SECRET=your_super_secret_jwt_key_here_make_it_random
+Create `.env` (copy `.env.example` and fill values)
+```env
+# Example values — replace with your real ones
+MONGO_DB_URI=mongodb+srv://<dbUser>:<dbPassword>@<cluster>.mongodb.net/<dbName>?retryWrites=true&w=majority
+JWT_SECRET=<strong-random-string>
 NODE_ENV=development
+PORT=5000
 ```
 
-### 4. Start the Application
-
-**Development Mode (with auto-reload):**
+Run in development
 ```bash
-# Terminal 1 - Backend
+# Backend
 npm run server
 
-# Terminal 2 - Frontend
-cd frontend
-npm run dev
+# Frontend (in another terminal)
+cd frontend && npm run dev
 ```
 
-**Production Mode:**
+Notes
+- `backend/server.js` serves the built frontend from `frontend/dist` in production. Run `npm run build --prefix frontend` before `npm start` for production.
+
+---
+
+## Docker (local)
+
+Build and run
 ```bash
-npm run build
-npm start
+docker build -t chat-app:dev .
+docker run --env-file .env -p 5000:5000 --name chat-app chat-app:dev
 ```
 
-### 5. Access the App
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+Important
+- Dockerfile now exposes port `5000` to match the server default.
+- Make sure `.env` contains `MONGO_DB_URI` and `JWT_SECRET` (do not commit `.env`).
 
 ---
 
-## How to Use
-1. Sign up with your username, full name, password, and gender
-2. Search for another user
-3. Start chatting in real-time!
-4. See online users and their status
+## Deploy to Render (PaaS)
+
+Render is a simple way to deploy this app using your GitHub repo and the `Dockerfile` in the repo root.
+
+Steps
+1. Create a Render account and connect your GitHub repo.
+2. New → Web Service → select repo and branch. Set Environment = `Docker`.
+3. In the Render service → Environment, add these variables (secrets):
+   - `MONGO_DB_URI` — your Atlas connection string
+   - `JWT_SECRET` — secure random string
+   - `NODE_ENV` — `production`
+   - Leave `PORT` blank (Render injects `PORT` automatically)
+4. (Optional) Create a Deploy Hook in Render (Settings → Deploy Hooks) and copy the URL.
+5. Add the Deploy Hook URL as a GitHub secret named `RENDER_DEPLOY_HOOK` (if you want CD via Actions).
+
+Render notes
+- Render auto-injects `PORT` and your `server.js` reads `process.env.PORT` so no manual port setting is needed.
 
 ---
 
-## Build & Deploy
+## CI / CD (GitHub Actions)
 
-### Build the app locally
-```shell
-npm run build
-```
+Included workflows
+- `.github/workflows/ci.yml` — builds the frontend and runs linter on push/PR to `main`.
+- `.github/workflows/docker-publish.yml` — builds and pushes the Docker image to GHCR and triggers Render via `RENDER_DEPLOY_HOOK` (if set).
 
-### Docker
+Repository secrets to add
+- `RENDER_DEPLOY_HOOK` — Render deploy hook URL (optional for CD)
+- (Optional) `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` if you prefer Docker Hub
+
+---
+
+## Environment variables (required)
+- `MONGO_DB_URI` — MongoDB Atlas connection string
+- `JWT_SECRET` — secure string used to sign JWT tokens
+- `NODE_ENV` — `production` on Render
+
+Generate a secure `JWT_SECRET` locally:
 ```bash
-docker build -t your_username/my-chat-app:v1 .
-docker run -p 5000:5000 --env-file .env your_username/my-chat-app:v1
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
+
+MongoDB Atlas access
+- If you see "Could not connect" errors, add your server IP to Atlas Network Access (or `0.0.0.0/0` for testing). For production on Render, consider VPC peering or Private Endpoints.
 
 ---
 
-## Project Structure
+## Troubleshooting
+- "Could not connect to any servers": check `MONGO_DB_URI`, Atlas DB user/password, and Atlas Network Access whitelist.
+- "No open ports detected": ensure `EXPOSE 5000` is in `Dockerfile` and `server.js` listens on `process.env.PORT` or `5000`.
+- View Docker logs locally: `docker logs -f <container>`.
+- View Render logs in the Render dashboard for build/runtime errors.
+
+---
+
+## Project structure
 ```
 .
 ├── backend/
@@ -107,55 +140,17 @@ docker run -p 5000:5000 --env-file .env your_username/my-chat-app:v1
 │   │   ├── pages/
 │   │   └── App.jsx
 │   └── package.json
-└── Dockerfile
+├── .github/workflows/
+├── Dockerfile
+└── .env.example
 ```
 
 ---
 
-## Author
-Created by: **Your Name**  
-GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+## Contributing & License
+- If you want to contribute, open a PR. Add tests and run linting before submitting.
+- License: MIT
 
 ---
 
-## License
-This project is open source and available under the MIT License.
-
-## Infrastructure Overview
-This project uses the following AWS resources:
-- **VPC** with public subnets
-- **Internet Gateway** and route tables for public access
-- **EKS Cluster** provisioned via Terraform
-- **Managed Node Group** (3 x t2.large worker nodes)
-- **NGINX Ingress Controller** deployed for routing
-- **NodePort Service** for Kubernetes workloads
-- **Security Groups** Allowing HTTP/HTTPS, NodePort, and SSH access
-
-## Architecture Diagram
-![Architecture Diagram](./images/ArchitectureDiagram.png)
-
-## Tech Stack
-- **Frontend**: React.js
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB Atlas
-- **Infrastructure**: Terraform
-- **Containerization**: Docker
-- **Orchestration**: Kubernetes
-- **CI/CD**: GitHub Actions & ArgoCD
-- **Cloud**: AWS
-- **Routing**: NGINX Ingress
-
-## Pull the Docker Image
-```shell
-docker pull abhi0874/chatapp-multistage:v1
-```
-### Run the container
-```shell
-docker run chatapp-multistage
-``` 
-
-## GitHub Actions CI
-![Ci Diagram](./images/CI.png)
-
-## ArgoCD
-![Deployment Diagram](./images/DeploymentDiagram.png)
+If you'd like, I can also add a `README-DEPLOY.md` with step-by-step screenshots for Render and Atlas, or a `render.yaml` for infra-as-code (without secrets). Tell me which you'd prefer.
