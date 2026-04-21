@@ -26,5 +26,5 @@ COPY --from=builder /app/backend ./backend
 COPY --from=builder /app/frontend/dist ./frontend/dist
 # COPY --from=builder /app/.env ./
 
-EXPOSE 3000
+EXPOSE 5000
 CMD [ "node", "backend/server.js" ]
